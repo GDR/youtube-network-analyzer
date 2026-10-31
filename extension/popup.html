@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>YT Connectivity & GGC Analyzer</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --card: #181b24;
+      --border: #2a2f3d;
+      --text: #e6edf3;
+      --muted: #8b949e;
+      --green: #2ea043;
+      --red: #f85149;
+      --orange: #d29922;
+      --blue: #58a6ff;
+      --purple: #bc8cff;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 12px;
+      width: 680px;
+      min-height: 460px;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
+      font-size: 12px;
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+    h1 {
+      font-size: 14px;
+      margin: 0;
+      font-weight: 600;
+    }
+    .actions {
+      display: flex;
+      gap: 6px;
+    }
+    button {
+      background: var(--card);
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 5px 10px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: 500;
+    }
+    button:hover {
+      border-color: var(--blue);
+    }
+    button.primary {
+      background: #1f6feb;
+      border-color: #388bfd;
+      color: #fff;
+    }
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+    .stat-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 8px;
+    }
+    .stat-label {
+      color: var(--muted);
+      font-size: 10px;
+      text-transform: uppercase;
+    }
+    .stat-val {
+      font-size: 16px;
+      font-weight: 700;
+      margin-top: 2px;
+    }
+    .section-title {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin: 10px 0 6px;
+      display: flex;
+      justify-content: space-between;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      overflow: hidden;
+      margin-bottom: 10px;
+    }
+    th, td {
+      padding: 5px 7px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 190px;
+    }
+    th {
+      background: #141720;
+      color: var(--muted);
+      font-weight: 600;
+      font-size: 10px;
+    }
+    .badge {
+      display: inline-block;
+      padding: 1px 5px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 600;
+    }
+    .b-ok { background: rgba(46, 160, 67, 0.2); color: #56d364; }
+    .b-fallback { background: rgba(88, 166, 255, 0.2); color: var(--blue); }
+    .b-stall { background: rgba(248, 81, 73, 0.25); color: #ff7b72; }
+    .b-reject { background: rgba(188, 140, 255, 0.2); color: var(--purple); }
+    .b-probe { background: rgba(139, 148, 158, 0.2); color: var(--muted); }
+    .b-redir { background: rgba(210, 153, 34, 0.2); color: var(--orange); }
+    .scroll-box {
+      max-height: 210px;
+      overflow-y: auto;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+    }
+    .scroll-box table {
+      margin-bottom: 0;
+      border: none;
+    }
+    #toast {
+      font-size: 11px;
+      color: #56d364;
+      margin-left: 8px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>YouTube Connectivity & GGC Telemetry</h1>
+      <span id="collector-status" style="font-size:10px;color:var(--muted);"></span>
+      <span id="toast"></span>
+    </div>
+    <div class="actions">
+      <button id="btn-copy" class="primary" title="Copy compact diagnostic report for AI analysis">Copy Report for AI</button>
+      <button id="btn-export" title="Download full JSONL log">Export JSON</button>
+      <button id="btn-clear">Clear</button>
+    </div>
+  </header>
+
+  <div class="summary-grid">
+    <div class="stat-card">
+      <div class="stat-label">Primary OK</div>
+      <div class="stat-val" id="st-ok" style="color:#56d364">0</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Fallback OK</div>
+      <div class="stat-val" id="st-fallback" style="color:var(--blue)">0</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">5s Stalls / Err</div>
+      <div class="stat-val" id="st-stall" style="color:var(--red)">0</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Fast Reject (1ms)</div>
+      <div class="stat-val" id="st-reject" style="color:var(--purple)">0</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Fake Probes</div>
+      <div class="stat-val" id="st-probe" style="color:var(--muted)">0</div>
+    </div>
+  </div>
+
+  <div class="section-title">
+    <span>Server Cluster Breakdown (GGC vs Core)</span>
+    <span id="inflight-count"></span>
+  </div>
+  <div class="scroll-box" style="max-height: 135px; margin-bottom: 10px;">
+    <table>
+      <thead>
+        <tr>
+          <th>Cluster / Host</th>
+          <th>Server IPs</th>
+          <th>OK</th>
+          <th>Fallback OK</th>
+          <th>5s Stalls</th>
+          <th>Fast Reject</th>
+          <th>Redir</th>
+          <th>Avg ms</th>
+        </tr>
+      </thead>
+      <tbody id="cluster-tbody"></tbody>
+    </table>
+  </div>
+
+  <div class="section-title">
+    <span>Recent Requests (Newest First)</span>
+    <label style="font-weight:normal;cursor:pointer;">
+      <input type="checkbox" id="chk-hide-probes" checked style="vertical-align:middle;" />
+      Hide fake adblock probes
+    </label>
+  </div>
+  <div class="scroll-box">
+    <table>
+      <thead>
+        <tr>
+          <th>Time</th>
+          <th>Video</th>
+          <th>rn</th>
+          <th>Host / Cluster</th>
+          <th>Server IP</th>
+          <th>Outcome</th>
+          <th>Duration</th>
+        </tr>
+      </thead>
+      <tbody id="recent-tbody"></tbody>
+    </table>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

@@ -1,0 +1,33 @@
+{
+  "manifest_version": 3,
+  "name": "YouTube Connectivity & GGC Analyzer",
+  "version": "1.0.0",
+  "description": "Monitors YouTube & googlevideo.com requests, server IPs, GGC clusters, 5s TSPU stalls, fallbacks, and player buffer health per video.",
+  "permissions": [
+    "webRequest",
+    "storage",
+    "tabs",
+    "downloads"
+  ],
+  "host_permissions": [
+    "*://*.googlevideo.com/*",
+    "*://*.youtube.com/*",
+    "*://*.ytimg.com/*",
+    "*://*.ggpht.com/*",
+    "http://127.0.0.1:18999/*"
+  ],
+  "background": {
+    "service_worker": "extension/background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://*.youtube.com/*"],
+      "js": ["extension/content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_popup": "extension/popup.html",
+    "default_title": "YT Connectivity Analyzer"
+  }
+}

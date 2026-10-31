@@ -1,0 +1,19 @@
+# Telemetry logs and runtime output
+logs/
+*.jsonl
+*.log
+
+# Router configuration dumps (contain sensitive keys/passwords)
+keenetic-dump/
+*startup-config*
+*.tar.gz
+
+# OS & Editor files
+.DS_Store
+.idea/
+.vscode/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
